@@ -1,3 +1,4 @@
+# vim:noet sw=4 ts=4
 INC = /usr/include/efi
 CFLAGS = -I$(INC) -I$(INC)/x86_64 -I$(INC)/protocol \
 		 -Wall -std=c11 \
@@ -8,7 +9,7 @@ LDFLAGS = -nostdlib -znocombreloc -shared -Bsymbolic \
 
 main.efi: main.so
 	objcopy -j .text \
-		    -j .sdata \
+			-j .sdata \
 			-j .data \
 			-j .dynamic \
 			-j .dynsym \
