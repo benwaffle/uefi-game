@@ -27,12 +27,20 @@ main.so: main.o
 
 main.o: main.c
 
+uefi.img: main.efi
+	cp gpt.img $@
+	dd if=/dev/zero of=/tmp/part.img bs=512 count=91669
+	mformat -i /tmp/part.img -h 32 -t 32 -n 64 -c 1
+	mcopy -i /tmp/part.img $< ::
+	dd if=/tmp/part.img of=$@ bs=512 count=91669 seek=2048 conv=notrunc
+	$(RM) /tmp/part.img
+
 clean:
 	$(RM) main.efi
 	$(RM) main.so
 	$(RM) main.o
 
-qemu:
+qemu: uefi.img
 	qemu-system-x86_64 -cpu qemu64 \
 		-drive if=pflash,format=raw,file=/usr/share/ovmf/ovmf_code_x64.bin,readonly=on \
 		-drive if=pflash,format=raw,file=./ovmf_vars_x64.bin \
