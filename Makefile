@@ -42,7 +42,7 @@ clean:
 
 qemu: uefi.img
 	qemu-system-x86_64 -cpu qemu64 \
-		-drive if=pflash,format=raw,file=ovmf_code_x64.bin,readonly=on \
+		-drive if=pflash,format=raw,file=./ovmf_code_x64.bin,readonly=on \
 		-drive if=pflash,format=raw,file=./ovmf_vars_x64.bin \
 		-drive file=uefi.img,if=ide
 
