@@ -14,6 +14,27 @@
   } \
 }
 
+static int memcmp(const void *s1, const void *s2, UINTN n)
+{
+	const unsigned char *c1 = s1, *c2 = s2;
+	int d = 0;
+
+	if (!s1 && !s2)
+		return 0;
+	if (s1 && !s2)
+		return 1;
+	if (!s1 && s2)
+		return -1;
+
+	while (n--) {
+		d = (int)*c1++ - (int)*c2++;
+		if (d)
+			break;
+	}
+	return d;
+}
+
+
 EFI_STATUS EFIAPI efi_main(EFI_HANDLE img, EFI_SYSTEM_TABLE *systab) {
   InitializeLib(img, systab);
   Print(L"Hello, world!\r\n");
@@ -29,7 +50,7 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE img, EFI_SYSTEM_TABLE *systab) {
     status = uefi_call_wrapper(gop->QueryMode, 4, gop, i, &sizeOfInfo, &info);
     CHECK(status, TRUE);
 
-    Print(L"%dx%d ", info->HorizontalResolution, info->VerticalResolution);
+    Print(L"%c%dx%d ", memcmp(gop->Mode->Info, info, sizeof(*info)) == 0 ? '*' : ' ', info->HorizontalResolution, info->VerticalResolution);
 		switch(info->PixelFormat) {
       case PixelRedGreenBlueReserved8BitPerColor:
         Print(L"RGBR");
