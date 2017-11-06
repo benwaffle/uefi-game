@@ -1,28 +1,62 @@
 #include <efi.h>
 #include <efilib.h>
 
+#define WIDE2(x) L##x
+#define WIDE1(x) WIDE2(x)
+#define WFILE WIDE1(__FILE__)
+
+#define CHECK(rc, crit) { \
+  if (EFI_ERROR(rc)) { \
+    CHAR16 Buffer[64]; \
+    StatusToString(Buffer, rc); \
+    Print(L"[%s:%d] %s (code %d)\r\n", WFILE, __LINE__, Buffer, rc); \
+    if (crit) Exit(rc, 0, NULL); \
+  } \
+}
+
 EFI_STATUS EFIAPI efi_main(EFI_HANDLE img, EFI_SYSTEM_TABLE *systab) {
-    InitializeLib(img, systab);
-    Print(L"Hello, world!\r\nwaiting for keypress \r\n");
+  InitializeLib(img, systab);
+  Print(L"Hello, world!\r\n");
 
-    EFI_STATUS res = EFI_SUCCESS;
-    while (res == EFI_SUCCESS) {
-        UINTN index = -1;
-        res = uefi_call_wrapper(systab->BootServices->WaitForEvent, 3, 1, &systab->ConIn->WaitForKey, &index);
-        if (EFI_ERROR(res)) {
-            Print(L"error: %d\n", res);
-        } else {
-            EFI_INPUT_KEY key;
-            uefi_call_wrapper(systab->ConIn->ReadKeyStroke, 2, systab->ConIn, &key);
-            Print(L"%c", key.UnicodeChar);
+  EFI_GRAPHICS_OUTPUT_PROTOCOL *gop;
 
-            if (key.UnicodeChar == 'q') {
-              break;
-            }
-        }
-    }
+  EFI_STATUS status = LibLocateProtocol(&GraphicsOutputProtocol, (void**)&gop);
+  CHECK(status, TRUE);
 
-    Print(L"\r\n");
+  for (int i = 0; i < gop->Mode->MaxMode; ++i) {
+    UINTN sizeOfInfo;
+    EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *info;
+    status = uefi_call_wrapper(gop->QueryMode, 4, gop, i, &sizeOfInfo, &info);
+    CHECK(status, TRUE);
 
-    return EFI_SUCCESS;
+    Print(L"%dx%d ", info->HorizontalResolution, info->VerticalResolution);
+		switch(info->PixelFormat) {
+      case PixelRedGreenBlueReserved8BitPerColor:
+        Print(L"RGBR");
+        break;
+      case PixelBlueGreenRedReserved8BitPerColor:
+        Print(L"BGRR");
+        break;
+      case PixelBitMask:
+        Print(L"R:%08x G:%08x B:%08x X:%08x",
+              info->PixelInformation.RedMask,
+              info->PixelInformation.GreenMask,
+              info->PixelInformation.BlueMask,
+              info->PixelInformation.ReservedMask);
+        break;
+      case PixelBltOnly:
+        Print(L"(blt only)");
+        break;
+      default:
+        Print(L"(Invalid pixel format)");
+        break;
+		}
+		Print(L" pitch %d\n", info->PixelsPerScanLine);
+    WaitForSingleEvent(ST->ConIn->WaitForKey, 0);
+    EFI_INPUT_KEY key;
+    status = uefi_call_wrapper(ST->ConIn->ReadKeyStroke, 2, ST->ConIn, &key);
+    CHECK(status, FALSE);
+  }
+
+  return EFI_SUCCESS;
 }
