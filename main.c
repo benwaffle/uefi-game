@@ -1,3 +1,4 @@
+// vim:et ts=2 sw=2
 #include <efi.h>
 #include <efilib.h>
 
@@ -14,10 +15,14 @@
   } \
 }
 
-void memset(void *s, int c, unsigned n) {
-  UINT8 *b = s;
-  for (int i = 0; i < n; ++i)
-    *(b++) = c;
+void square(uint32_t *buf, uint32_t color, unsigned x, unsigned y, unsigned width, unsigned height, unsigned stride) {
+  for (unsigned yy = y; yy < y + height; ++yy)
+    for (unsigned xx = x; xx < x + width; ++xx)
+      buf[yy * stride + xx] = color;
+}
+
+uint32_t color(uint8_t red, uint8_t green, uint8_t blue) {
+  return (blue << 24) | (green << 16) | (red << 8) | 0xff;
 }
 
 EFI_STATUS EFIAPI efi_main(EFI_HANDLE img, EFI_SYSTEM_TABLE *systab) {
@@ -38,9 +43,21 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE img, EFI_SYSTEM_TABLE *systab) {
   }
 
   Print(L"%dx%d\r\n", width, height);
+  WaitForSingleEvent(systab->ConIn->WaitForKey, 0);
 
-  UINT8 Buffer[width * height];
-  memset(Buffer, 0, width * height);
+  uint64_t size = width * height * sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL);
+  uint32_t *buffer = AllocateZeroPool(size);
+
+  //while (true) {
+    square(buffer, color(0xf4, 0x71, 0x42), 0, 0, width, height, width);
+    square(buffer, color(0x59, 0xf4, 0x42), 400, 300, 100, 100, width);
+
+    status = uefi_call_wrapper(gop->Blt, 10, gop, buffer, EfiBltBufferToVideo, 0, 0, 0, 0, width, height, 0);
+    CHECK(status, FALSE);
+  //}
+
+  Print(L"press any key to exit...\r\n");
+  WaitForSingleEvent(systab->ConIn->WaitForKey, 0);
 
   return EFI_SUCCESS;
 }
