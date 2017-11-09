@@ -27,7 +27,7 @@ uint32_t color(uint8_t red, uint8_t green, uint8_t blue) {
 
 EFI_STATUS EFIAPI efi_main(EFI_HANDLE img, EFI_SYSTEM_TABLE *systab) {
   InitializeLib(img, systab);
-  Print(L"This is a game\r\n");
+  //Print(L"This is a game\r\n");
 
   EFI_GRAPHICS_OUTPUT_PROTOCOL *gop;
 
@@ -43,18 +43,30 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE img, EFI_SYSTEM_TABLE *systab) {
   }
 
   Print(L"%dx%d\r\n", width, height);
-  WaitForSingleEvent(systab->ConIn->WaitForKey, 0);
+  //WaitForSingleEvent(systab->ConIn->WaitForKey, 0);
 
   uint64_t size = width * height * sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL);
   uint32_t *buffer = AllocateZeroPool(size);
 
-  //while (true) {
+  int x = 300;
+  int y = 400;
+  int delta = 10;
+
+  while (TRUE) {
     square(buffer, color(0xf4, 0x71, 0x42), 0, 0, width, height, width);
-    square(buffer, color(0x59, 0xf4, 0x42), 400, 300, 100, 100, width);
+    square(buffer, color(0x59, 0xf4, 0x42), x, y, 100, 100, width);
 
     status = uefi_call_wrapper(gop->Blt, 10, gop, buffer, EfiBltBufferToVideo, 0, 0, 0, 0, width, height, 0);
     CHECK(status, FALSE);
-  //}
+
+    WaitForSingleEvent(ST->ConIn->WaitForKey, 0);
+    EFI_INPUT_KEY key;
+    uefi_call_wrapper(ST->ConIn->ReadKeyStroke, 2, ST->ConIn, &key);
+    if (key.ScanCode == SCAN_UP) y -= delta;
+    if (key.ScanCode == SCAN_DOWN) y += delta;
+    if (key.ScanCode == SCAN_LEFT) x -= delta;
+    if (key.ScanCode == SCAN_RIGHT) x += delta;
+  }
 
   Print(L"press any key to exit...\r\n");
   WaitForSingleEvent(systab->ConIn->WaitForKey, 0);
