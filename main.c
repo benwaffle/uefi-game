@@ -50,7 +50,7 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE img, EFI_SYSTEM_TABLE *systab) {
 
   int x = 300;
   int y = 400;
-  int delta = 10;
+  int delta = 40;
 
   while (TRUE) {
     square(buffer, color(0xf4, 0x71, 0x42), 0, 0, width, height, width);
@@ -60,12 +60,19 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE img, EFI_SYSTEM_TABLE *systab) {
     CHECK(status, FALSE);
 
     WaitForSingleEvent(ST->ConIn->WaitForKey, 0);
-    EFI_INPUT_KEY key;
-    uefi_call_wrapper(ST->ConIn->ReadKeyStroke, 2, ST->ConIn, &key);
-    if (key.ScanCode == SCAN_UP) y -= delta;
-    if (key.ScanCode == SCAN_DOWN) y += delta;
-    if (key.ScanCode == SCAN_LEFT) x -= delta;
-    if (key.ScanCode == SCAN_RIGHT) x += delta;
+    while (uefi_call_wrapper(BS->CheckEvent, 1, ST->ConIn->WaitForKey) != EFI_NOT_READY) {
+      EFI_INPUT_KEY key;
+      uefi_call_wrapper(ST->ConIn->ReadKeyStroke, 2, ST->ConIn, &key);
+      if (key.ScanCode == SCAN_UP) y -= delta;
+      if (key.ScanCode == SCAN_DOWN) y += delta;
+      if (key.ScanCode == SCAN_LEFT) x -= delta;
+      if (key.ScanCode == SCAN_RIGHT) x += delta;
+    }
+
+    if (y < 0) y = 0;
+    if (y + 100 > height) y = height-100;
+    if (x < 0) x = 0;
+    if (x + 100 > width) x = width-100;
   }
 
   Print(L"press any key to exit...\r\n");
