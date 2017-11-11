@@ -63,19 +63,17 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE img, EFI_SYSTEM_TABLE *systab) {
     CHECK(status, FALSE);
 
     WaitForSingleEvent(ST->ConIn->WaitForKey, 0);
-    while (uefi_call_wrapper(BS->CheckEvent, 1, ST->ConIn->WaitForKey) != EFI_NOT_READY) {
-      EFI_INPUT_KEY key;
-      uefi_call_wrapper(ST->ConIn->ReadKeyStroke, 2, ST->ConIn, &key);
-      if (key.ScanCode == SCAN_UP) y -= delta;
-      if (key.ScanCode == SCAN_DOWN) y += delta;
-      if (key.ScanCode == SCAN_LEFT) x -= delta;
-      if (key.ScanCode == SCAN_RIGHT) x += delta;
+    EFI_INPUT_KEY key;
+    uefi_call_wrapper(ST->ConIn->ReadKeyStroke, 2, ST->ConIn, &key);
+    if (key.ScanCode == SCAN_UP) y -= delta;
+    if (key.ScanCode == SCAN_DOWN) y += delta;
+    if (key.ScanCode == SCAN_LEFT) x -= delta;
+    if (key.ScanCode == SCAN_RIGHT) x += delta;
 
-      if (key.UnicodeChar == 'w') y2 -= delta;
-      if (key.UnicodeChar == 'a') x2 -= delta;
-      if (key.UnicodeChar == 's') y2 += delta;
-      if (key.UnicodeChar == 'd') x2 += delta;
-    }
+    if (key.UnicodeChar == 'w') y2 -= delta;
+    if (key.UnicodeChar == 'a') x2 -= delta;
+    if (key.UnicodeChar == 's') y2 += delta;
+    if (key.UnicodeChar == 'd') x2 += delta;
 
     if (y < 0) y = 0;
     if (y + 100 > height) y = height-100;
